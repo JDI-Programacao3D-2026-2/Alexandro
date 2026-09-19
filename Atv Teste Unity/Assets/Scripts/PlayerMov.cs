@@ -4,9 +4,6 @@ public class Mov : MonoBehaviour
 {
     public Rigidbody rb;
     private float vel = 5f;
-    private float jumpForce = 5f;
-    public float gravity = -9.81f;
-
     private Vector3 direction;
     // Update is called once per frame
     void Start()
@@ -16,11 +13,7 @@ public class Mov : MonoBehaviour
     void Update()
     {
         Mover();
-        if (Keyboard.current[Key.Space].wasPressedThisFrame)
-        {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-        }
-        rb.AddForce(Vector3.down * gravity, ForceMode.Force);
+
     }
     void FixedUpdate()
     {
