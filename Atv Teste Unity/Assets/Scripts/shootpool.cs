@@ -8,6 +8,7 @@ public class shootpool : MonoBehaviour
     public Transform SpawnBulletPoint;
     public int poolSize = 20;
     public int currentAmmo;
+    public int BulletShell = 3;
     private int activeProjectiles = 0;
     private ObjectPool<GameObject> pool;
 
@@ -25,11 +26,6 @@ public class shootpool : MonoBehaviour
             maxSize: poolSize
         );
     }
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
 
     // Update is called once per frame
     void Update()
@@ -37,6 +33,12 @@ public class shootpool : MonoBehaviour
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             Shoot();
+        }
+
+        if (Keyboard.current.rKey.wasPressedThisFrame)
+        {
+            currentAmmo = poolSize;
+            BulletShell --;
         }
     }
 
@@ -55,6 +57,12 @@ public class shootpool : MonoBehaviour
         projectile.transform.SetPositionAndRotation(SpawnBulletPoint.position, SpawnBulletPoint.rotation);
         projectile.GetComponent<Projectile>().StartProjectile(SpawnBulletPoint.forward, this);
         
+    }
+
+    public void  ReturnProjectile(GameObject projectile)
+    {
+        activeProjectiles--;
+        pool.Release(projectile);
     }
 
 
