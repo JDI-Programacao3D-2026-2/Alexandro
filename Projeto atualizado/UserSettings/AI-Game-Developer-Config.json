@@ -1,0 +1,19 @@
+{
+  "host": "http://localhost:20885",
+  "token": "dsWZ29ybs51UWk5NkLRa7M5o1Jf1UgZvf3tSSkbWOfg",
+  "logLevel": "Warning",
+  "keepServerRunning": true,
+  "transportMethod": "streamableHttp",
+  "authOption": "none",
+  "connectionMode": "Cloud",
+  "tools": [],
+  "prompts": [],
+  "resources": [],
+  "skillAutoGenerate": {},
+  "timeoutMs": 10000,
+  "keepConnected": true,
+  "maxConsecutiveConnectionFailures": 0,
+  "connectTimeoutSeconds": 0,
+  "generateSkillFiles": false,
+  "skillsPath": ".claude/skills"
+}
