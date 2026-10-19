@@ -68,4 +68,9 @@ public class HeroClassManager : MonoBehaviour
         }
     }
 
+    public HeroClass GetHeroClass()
+    {
+        return SelectedClass;
+    }
+
 }
