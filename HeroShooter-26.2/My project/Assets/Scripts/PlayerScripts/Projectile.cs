@@ -40,41 +40,42 @@ public class Projectile : MonoBehaviour
 
     void Update()
     {
-        if (hasReturned)
-            return;
+        if (hasReturned) return;
 
-        // Calcula quanto a bala percorre neste frame.
         float distanceThisFrame = speed * Time.deltaTime;
 
-        // Move a bala na direção definida pelo controlador.
-        transform.position += direction * distanceThisFrame;
+        // Olha se tem algo no caminho deste frame
+        if (Physics.Raycast(transform.position, direction, out RaycastHit hit, distanceThisFrame))
+        {
+            Debug.Log("Bala colidiu com: " + hit.collider.gameObject.name);
+            ReturnToPool();
+            return;
+        }
 
-        // Acumula a distância percorrida.
+        transform.position += direction * distanceThisFrame;
         distanceTravelled += distanceThisFrame;
 
-        // Devolve a bala à pool ao atingir o alcance máximo.
         if (distanceTravelled >= maxDistance)
-        {
             ReturnToPool();
-        }
     }
 
     void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Bala colidiu com: " + collision.gameObject.name);
         if (hasReturned)
             return;
+        Debug.Log("Bala colidiu com: " + collision.gameObject.name);
+        ReturnToPool();
+        
 
         // Procura o componente de vida no objeto atingido.
         //EnemyHealth enemy =
         //    collision.gameObject.GetComponent<EnemyHealth>();
 
         //if (enemy != null)
-        {
+        //{
          //   enemy.TakeDamage(damage);
-        }
+        //}
 
-        ReturnToPool();
     }
 
     void SpawnTime()
@@ -100,4 +101,5 @@ public class Projectile : MonoBehaviour
             gameObject.SetActive(false);
         }
     }
+
 }
