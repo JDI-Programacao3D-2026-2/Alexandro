@@ -1055,7 +1055,7 @@ GameObject:
   - component: {fileID: 2720722991888852241}
   - component: {fileID: 7884909358570633702}
   m_Layer: 3
-  m_Name: Player
+  m_Name: PlayerSoldier
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1199,6 +1199,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMove
   rb: {fileID: 6002430478541694154}
+  speed: 5
   jumpForce: 5
 --- !u!114 &7884909358570633702
 MonoBehaviour:
@@ -1220,11 +1221,15 @@ MonoBehaviour:
   aimDistance: 200
   aimMask:
     serializedVersion: 2
-    m_Bits: 119
+    m_Bits: 375
+  debugShots: 0
   magazineSize: 30
   currentAmmo: 0
   reserveAmmo: 90
   poolsize: 40
-  reloadTime: 1.3
+  reloadTime: 1
   specialDuration: 15
   specialCooldown: 30
+  maxHealth: 100
+  currentHealth: 100
+  respawnDelay: 2

@@ -1,61 +1,77 @@
-
 using UnityEngine;
 
+// A bala agora é movida pela física (Rigidbody), não mais por transform.position.
+[RequireComponent(typeof(Rigidbody))]
 public class Projectile : MonoBehaviour
 {
     [Header("Configuração da bala")]
-    public float speed = 10f;
+    public float speed = 30f;
     public int damage = 10;
     public float maxDistance = 100f;
+    public float lifeTime = 5f;
 
-    private Vector3 direction;
+    private Rigidbody rb;
+    private Collider[] myColliders;
     private SoldierShootPool shooter;
 
     private Vector3 startPosition;
-    private float distanceTravelled;
+    private float spawnTime;
+    private bool hasReturned = true;
 
-    private bool hasReturned;
-
-    void OnEnable()
+    void Awake()
     {
-        hasReturned = false;
-        distanceTravelled = 0f;
-        startPosition = transform.position;
+        rb = GetComponent<Rigidbody>();
+        myColliders = GetComponentsInChildren<Collider>(true);
 
-        CancelInvoke();
-        Invoke(nameof(SpawnTime), 10f);
+        // Configura o Rigidbody por código, para não depender do prefab.
+        rb.useGravity = false;
+        rb.isKinematic = false;
+        rb.freezeRotation = true;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
     }
 
-    public void StartProjectile(
-        Vector3 direction,
-        SoldierShootPool shooter)
+    // Chamado pelo SoldierShootPool depois de posicionar a bala.
+    public void StartProjectile(Vector3 direction, SoldierShootPool shooter)
     {
-        this.direction = direction.normalized;
         this.shooter = shooter;
 
-        // Guarda a posição inicial real do disparo.
+        hasReturned = false;
         startPosition = transform.position;
-        distanceTravelled = 0f;
+        spawnTime = Time.time;
+
+        // A bala nunca colide com o próprio atirador (corpo, armas, etc.).
+        if (shooter != null)
+        {
+            foreach (Collider own in shooter.OwnColliders)
+            {
+                if (own == null) continue;
+
+                foreach (Collider mine in myColliders)
+                    Physics.IgnoreCollision(mine, own, true);
+            }
+        }
+
+        // Quem move a bala agora é o Rigidbody.
+        rb.linearVelocity = direction.normalized * speed;
+        rb.angularVelocity = Vector3.zero;
     }
 
-    void Update()
+    void FixedUpdate()
     {
-        if (hasReturned) return;
+        if (hasReturned)
+            return;
 
-        float distanceThisFrame = speed * Time.deltaTime;
-
-        // Olha se tem algo no caminho deste frame
-        if (Physics.Raycast(transform.position, direction, out RaycastHit hit, distanceThisFrame))
+        // Alcance máximo.
+        float travelled = (rb.position - startPosition).magnitude;
+        if (travelled >= maxDistance)
         {
-            Debug.Log("Bala colidiu com: " + hit.collider.gameObject.name);
             ReturnToPool();
             return;
         }
 
-        transform.position += direction * distanceThisFrame;
-        distanceTravelled += distanceThisFrame;
-
-        if (distanceTravelled >= maxDistance)
+        // Tempo máximo de vida.
+        if (Time.time - spawnTime >= lifeTime)
             ReturnToPool();
     }
 
@@ -63,23 +79,20 @@ public class Projectile : MonoBehaviour
     {
         if (hasReturned)
             return;
-        Debug.Log("Bala colidiu com: " + collision.gameObject.name);
-        ReturnToPool();
-        
 
-        // Procura o componente de vida no objeto atingido.
-        //EnemyHealth enemy =
-        //    collision.gameObject.GetComponent<EnemyHealth>();
+        // Aviso de diagnóstico: bala que morre logo depois de sair da arma.
+        if (Time.time - spawnTime < 0.1f)
+        {
+            Debug.LogWarning(
+                "Bala morreu ao nascer, colidiu com: " +
+                collision.gameObject.name +
+                " (layer " + LayerMask.LayerToName(collision.gameObject.layer) + ")");
+        }
 
-        //if (enemy != null)
-        //{
-         //   enemy.TakeDamage(damage);
-        //}
+        // Aqui entra o dano quando você tiver o script de vida do inimigo:
+        // EnemyHealth enemy = collision.gameObject.GetComponentInParent<EnemyHealth>();
+        // if (enemy != null) enemy.TakeDamage(damage);
 
-    }
-
-    void SpawnTime()
-    {
         ReturnToPool();
     }
 
@@ -90,16 +103,12 @@ public class Projectile : MonoBehaviour
 
         hasReturned = true;
 
-        CancelInvoke(nameof(SpawnTime));
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
 
         if (shooter != null)
-        {
             shooter.ReturnProjectile(gameObject);
-        }
         else
-        {
             gameObject.SetActive(false);
-        }
     }
-
 }

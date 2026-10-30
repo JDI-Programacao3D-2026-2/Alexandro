@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.InputSystem;
@@ -17,7 +16,9 @@ public class SoldierShootPool : MonoBehaviour
     [Header("Mira")]
     public Camera aimCamera;
     public float aimDistance = 200f;
-    public LayerMask aimMask = ~0;
+    public LayerMask aimMask = ~0; // No Inspector, desmarque Player e Projectile.
+    public bool debugShots = false; // Liga logs e uma linha vermelha na Scene view.
+    private readonly RaycastHit[] aimHits = new RaycastHit[16];
 
     [Header("Municao")]
     public int magazineSize = 30;
@@ -35,32 +36,62 @@ public class SoldierShootPool : MonoBehaviour
 
     [Header("Especial")]
     public float specialDuration = 15f;
-    public float specialCooldown = 30f;
-
+    public float specialCooldown = 30f;   // valor configurado
+    private float currentCooldown = 0f;   // contador em uso
     private bool isSpecialActive = false;
-    private bool specialReady = true;
+
+    [Header("Vida")]
+    public int maxHealth = 100;
+    public int currentHealth = 100;
+    public float respawnDelay = 2f;
+
+    // Colliders do próprio soldado; as balas ignoram colisão com eles.
+    public Collider[] OwnColliders { get; private set; }
 
     void Awake()
     {
-        // Comeca com o pente cheio.
         currentAmmo = magazineSize;
 
-        // A segunda arma comeca desativada.
-        if (secondWeapon != null)
-        {
-            secondWeapon.SetActive(false);
-        }
+        OwnColliders = GetComponentsInChildren<Collider>(true);
 
-        // Cria a pool de projeteis.
+        if (secondWeapon != null)
+            secondWeapon.SetActive(false);
+
         pool = new ObjectPool<GameObject>(
             () => Instantiate(projectilePrefab),
             projectile => projectile.SetActive(true),
             projectile => projectile.SetActive(false),
-            projectile => Destroy(projectile),
+            projectile =>
+            {
+                // Evita o erro de Destroy ao sair do Play Mode.
+                if (projectile != null && Application.isPlaying)
+                    Destroy(projectile);
+            },
             false,
             poolsize,
             poolsize
         );
+    }
+
+    void Start()
+    {
+        UpdateAmmoUI();
+        UpdateLifeUI();
+    }
+
+    void OnDisable()
+    {
+        // Corrotinas param quando o objeto é desativado (morte).
+        // Sem isto, isReloading e isSpecialActive ficariam travados em true.
+        isReloading = false;
+
+        if (isSpecialActive)
+        {
+            isSpecialActive = false;
+
+            if (secondWeapon != null)
+                secondWeapon.SetActive(false);
+        }
     }
 
     void Update()
@@ -68,37 +99,26 @@ public class SoldierShootPool : MonoBehaviour
         if (Mouse.current == null || Keyboard.current == null)
             return;
 
-        // Disparo com o botao esquerdo do mouse.
         if (Mouse.current.leftButton.wasPressedThisFrame)
-        {
             Shoot();
-        }
 
-        // Recarga com R.
         if (Keyboard.current[Key.R].wasPressedThisFrame)
-        {
             StartCoroutine(Reload());
-        }
 
         // Ativa o especial com Q.
         if (Keyboard.current[Key.Q].wasPressedThisFrame)
         {
-            if (specialReady && !isSpecialActive)
-            {
+            if (!isSpecialActive && currentCooldown <= 0f)
                 StartCoroutine(ActivateSpecial());
-            }
         }
 
-        if (specialCooldown > 0f && !specialReady)
-        {
-            specialCooldown -= Time.deltaTime / 2;
-        }
-
+        // O cooldown começa a contar quando o especial é ativado.
+        if (currentCooldown > 0f)
+            currentCooldown = Mathf.Max(0f, currentCooldown - Time.deltaTime);
     }
 
     void Shoot()
     {
-        // Impede disparar durante a recarga.
         if (isReloading)
             return;
 
@@ -108,77 +128,92 @@ public class SoldierShootPool : MonoBehaviour
             return;
         }
 
-        // Verifica se existe municao no pente.
         if (currentAmmo <= 0)
         {
             Debug.Log("Sem municao! Pressione R para recarregar.");
             return;
         }
 
-        // No especial, dois projeteis precisam estar disponiveis.
         int shotsNeeded = isSpecialActive ? 2 : 1;
 
         if (activeProjectiles + shotsNeeded > poolsize)
         {
-            Debug.Log("Limite de projeteis ativos atingido!");
+            Debug.LogWarning("Limite de projeteis ativos atingido!");
             return;
         }
 
-        // Cria um raio saindo do centro da tela.
+        // Raio saindo do centro da tela.
         Ray cameraRay = aimCamera.ViewportPointToRay(
             new Vector3(0.5f, 0.5f, 0f)
         );
 
-        Vector3 aimPoint;
+        // Procura o ponto mirado ignorando o próprio soldado e as balas,
+        // mesmo que algum filho do prefab esteja numa layer errada.
+        Vector3 aimPoint = cameraRay.GetPoint(aimDistance);
+        float closest = float.MaxValue;
 
-        // Procura o ponto atingido pela mira da camera.
-        if (Physics.Raycast(
+        int hitCount = Physics.RaycastNonAlloc(
             cameraRay,
-            out RaycastHit cameraHit,
+            aimHits,
             aimDistance,
-            aimMask))
+            aimMask,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
         {
-            aimPoint = cameraHit.point;
-        }
-        else
-        {
-            // Se nao acertar nada, mira para longe.
-            aimPoint = cameraRay.GetPoint(aimDistance);
+            Collider c = aimHits[i].collider;
+
+            if (System.Array.IndexOf(OwnColliders, c) >= 0)
+                continue;
+
+            if (c.GetComponentInParent<Projectile>() != null)
+                continue;
+
+            if (aimHits[i].distance < closest)
+            {
+                closest = aimHits[i].distance;
+                aimPoint = aimHits[i].point;
+            }
         }
 
-        // Dispara a arma principal.
-        FireProjectile(shootPoint, aimPoint);
+        if (debugShots)
+        {
+            Debug.Log("Mira em: " + aimPoint + " (distancia " + closest + ")");
+            Debug.DrawLine(shootPoint.position, aimPoint, Color.red, 2f);
+        }
 
-        // Durante o especial, dispara tambem pela segunda arma.
+        FireProjectile(shootPoint, aimPoint, cameraRay.direction);
+
         if (isSpecialActive && secondShootPoint != null)
-        {
-            FireProjectile(secondShootPoint, aimPoint);
-        }
+            FireProjectile(secondShootPoint, aimPoint, cameraRay.direction);
 
-        // Apenas uma bala e gasta por clique.
         currentAmmo--;
+        UpdateAmmoUI();
     }
 
-    void FireProjectile(Transform shotPoint, Vector3 aimPoint)
+    void FireProjectile(Transform shotPoint, Vector3 aimPoint, Vector3 cameraForward)
     {
-        // Calcula a direcao entre a arma e o ponto mirado.
-        Vector3 direction = (aimPoint - shotPoint.position).normalized;
+        Vector3 direction = aimPoint - shotPoint.position;
 
-        // Pega um projetil disponivel na pool.
+        // Se o ponto mirado ficou atrás do cano (parede colada no player),
+        // atira para frente da câmera em vez de atirar para trás.
+        if (direction.sqrMagnitude < 0.0001f ||
+            Vector3.Dot(direction, cameraForward) <= 0f)
+        {
+            direction = cameraForward;
+        }
+
+        direction.Normalize();
+
         GameObject projectile = pool.Get();
-
         activeProjectiles++;
 
-        // Posiciona o projetil na saida da arma.
         projectile.transform.SetPositionAndRotation(
             shotPoint.position,
             Quaternion.LookRotation(direction)
         );
 
-        // Entrega a direcao e a referencia deste controlador
-        // ao script Projectile, que movimenta a bala.
-        Projectile projectileScript =
-            projectile.GetComponent<Projectile>();
+        Projectile projectileScript = projectile.GetComponent<Projectile>();
 
         if (projectileScript != null)
         {
@@ -186,10 +221,7 @@ public class SoldierShootPool : MonoBehaviour
         }
         else
         {
-            Debug.LogError(
-                "O prefab do projetil precisa ter o script Projectile."
-            );
-
+            Debug.LogError("O prefab do projetil precisa ter o script Projectile.");
             ReturnProjectile(projectile);
         }
     }
@@ -197,72 +229,91 @@ public class SoldierShootPool : MonoBehaviour
     // Chamado pelo Projectile quando a bala termina.
     public void ReturnProjectile(GameObject projectile)
     {
-        activeProjectiles--;
-
+        activeProjectiles = Mathf.Max(0, activeProjectiles - 1);
         pool.Release(projectile);
     }
 
     IEnumerator Reload()
     {
-        // Evita recargas simultaneas.
-        if (isReloading)
-            yield break;
-
-        // Nao recarrega se ja estiver cheio.
-        if (currentAmmo >= magazineSize)
-            yield break;
-
-        // Nao recarrega se nao houver reserva.
-        if (reserveAmmo <= 0)
-            yield break;
+        if (isReloading) yield break;
+        if (currentAmmo >= magazineSize) yield break;
+        if (reserveAmmo <= 0) yield break;
 
         isReloading = true;
 
-        // Aguarda o tempo da recarga.
         yield return new WaitForSeconds(reloadTime);
 
-        // Calcula quantas balas faltam no pente.
         int missingAmmo = magazineSize - currentAmmo;
-
-        // Usa somente as balas disponiveis na reserva.
         int ammoToLoad = Mathf.Min(missingAmmo, reserveAmmo);
 
         currentAmmo += ammoToLoad;
         reserveAmmo -= ammoToLoad;
 
         isReloading = false;
+        UpdateAmmoUI();
     }
 
     IEnumerator ActivateSpecial()
     {
         if (secondWeapon == null || secondShootPoint == null)
         {
-            Debug.LogWarning(
-                "Configure a segunda arma e o segundo Shoot Point."
-            );
+            Debug.LogWarning("Configure a segunda arma e o segundo Shoot Point.");
             yield break;
         }
 
-        // Bloqueia novas ativacoes.
-        specialReady = false;
         isSpecialActive = true;
+        currentCooldown = specialCooldown;
 
-        // Mostra a segunda arma.
         secondWeapon.SetActive(true);
 
-        // Espera a duracao do especial.
         yield return new WaitForSeconds(specialDuration);
 
-        // Desativa o especial.
         isSpecialActive = false;
         secondWeapon.SetActive(false);
-
-        // Permite usar o especial novamente.
-        specialReady = true;
     }
 
     public void RecoverSpecialCooldown(float amount)
     {
-        specialCooldown = Mathf.Max(0f, specialCooldown - amount);
+        currentCooldown = Mathf.Max(0f, currentCooldown - amount);
+    }
+
+    public void TakeDamage(int damage)
+    {
+        currentHealth = Mathf.Max(currentHealth - damage, 0);
+        UpdateLifeUI();
+
+        if (currentHealth <= 0)
+            Die();
+    }
+
+    void Die()
+    {
+        Debug.Log("Soldier morreu!");
+
+        // A contagem do respawn fica no inGameManager, porque este objeto
+        // vai ser desativado (e uma corrotina aqui morreria junto).
+        gameObject.SetActive(false);
+
+        if (inGameManager.Instance != null)
+            inGameManager.Instance.RespawnPlayer(respawnDelay, this);
+    }
+
+    // Chamado pelo inGameManager ao reviver.
+    public void ResetHealth()
+    {
+        currentHealth = maxHealth;
+        UpdateLifeUI();
+    }
+
+    void UpdateAmmoUI()
+    {
+        if (inGameManager.Instance != null)
+            inGameManager.Instance.UpdateAmmo(currentAmmo, reserveAmmo);
+    }
+
+    void UpdateLifeUI()
+    {
+        if (inGameManager.Instance != null)
+            inGameManager.Instance.UpdateLife(currentHealth, maxHealth);
     }
 }

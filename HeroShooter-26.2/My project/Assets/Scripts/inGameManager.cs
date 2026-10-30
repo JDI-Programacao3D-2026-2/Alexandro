@@ -1,11 +1,11 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
-
 
 public class inGameManager : MonoBehaviour
 {
     [Header("Referências")]
-    public static inGameManager instance;
+    public static inGameManager Instance;
     public GameObject PlayerSoldierPrefab;
     public GameObject PlayerBerserkPrefab;
     public Transform SpawnPoint;
@@ -31,48 +31,96 @@ public class inGameManager : MonoBehaviour
     public TextMeshProUGUI AmmoUI;
     public TextMeshProUGUI SpecialUI;
 
+    [Header("UI de Game Over")]
+    public GameObject[] spawnpoints;
 
     void Awake()
     {
-
-        //Instanciamento do Player e da câmera principal
-        instance = this;
+        Instance = this;
 
         if (HeroClassManager.Instance == null)
-        {
             SelectedClass = HeroClassManager.HeroClass.Soldier;
-        }else
-        {
+        else
             SelectedClass = HeroClassManager.Instance.GetHeroClass();
-        }
 
         if (SelectedClass == HeroClassManager.HeroClass.Soldier)
         {
-            GameObject spawnedSoldier = Instantiate(PlayerSoldierPrefab, SpawnPoint.position, SpawnPoint.rotation);
-            
-            SoldierShootPool soldierShootPool = spawnedSoldier.GetComponent<SoldierShootPool>();
-            
-            MainCamera.player = spawnedSoldier.transform;
-            
+            GameObject spawnedSoldier = Instantiate(
+                PlayerSoldierPrefab, SpawnPoint.position, SpawnPoint.rotation);
+
+            SoldierShootPool soldierShootPool =
+                spawnedSoldier.GetComponent<SoldierShootPool>();
+
             if (soldierShootPool != null && MainCameraObject != null)
-            {
                 soldierShootPool.aimCamera = MainCameraObject.GetComponent<Camera>();
-            }
+
+            PlayerObject = spawnedSoldier;
         }
         else if (SelectedClass == HeroClassManager.HeroClass.Berserker)
         {
-            Instantiate(PlayerBerserkPrefab, SpawnPoint.position, SpawnPoint.rotation);
+            PlayerObject = Instantiate(
+                PlayerBerserkPrefab, SpawnPoint.position, SpawnPoint.rotation);
         }
 
-        PlayerObject = GameObject.FindGameObjectWithTag("Player");
-        MainCamera.player = PlayerObject.transform;
-
-
+        if (PlayerObject != null)
+            MainCamera.player = PlayerObject.transform;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void UpdateLife(int life, int maxLife)
     {
-        
+        if (HealthUI != null)
+            HealthUI.text = life + "/" + maxLife;
+    }
+
+    public void UpdateAmmo(int currentAmmo, int reserveAmmo)
+    {
+        if (AmmoUI != null)
+            AmmoUI.text = currentAmmo + "/" + reserveAmmo;
+    }
+
+    // Chamado pelo soldado quando morre. A espera acontece aqui, num
+    // objeto que continua ativo.
+    public void RespawnPlayer(float delay, SoldierShootPool soldier)
+    {
+        StartCoroutine(RespawnRoutine(delay, soldier));
+    }
+
+    IEnumerator RespawnRoutine(float delay, SoldierShootPool soldier)
+    {
+        yield return new WaitForSeconds(delay);
+
+        Debug.Log("Soldier revivido!");
+
+        if (soldier != null)
+            soldier.ResetHealth();
+
+        RevivePlayer();
+    }
+
+    public void RevivePlayer()
+    {
+        if (PlayerObject == null)
+            return;
+
+        // Joga o player para um spawnpoint aleatório.
+        Transform target = SpawnPoint;
+
+        if (spawnpoints != null && spawnpoints.Length > 0)
+        {
+            int randomIndex = Random.Range(0, spawnpoints.Length);
+            target = spawnpoints[randomIndex].transform;
+        }
+
+        PlayerObject.transform.SetPositionAndRotation(
+            target.position, target.rotation);
+
+        // Zera a velocidade para não "herdar" a queda/movimento anterior.
+        if (PlayerObject.TryGetComponent(out Rigidbody playerRb))
+        {
+            playerRb.linearVelocity = Vector3.zero;
+            playerRb.angularVelocity = Vector3.zero;
+        }
+
+        PlayerObject.SetActive(true);
     }
 }
