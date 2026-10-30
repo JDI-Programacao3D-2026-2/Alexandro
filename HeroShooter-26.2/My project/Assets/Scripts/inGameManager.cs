@@ -1,4 +1,3 @@
-using System.Collections;
 using TMPro;
 using UnityEngine;
 
@@ -8,7 +7,7 @@ public class inGameManager : MonoBehaviour
     public static inGameManager Instance;
     public GameObject PlayerSoldierPrefab;
     public GameObject PlayerBerserkPrefab;
-    public Transform SpawnPoint;
+    public Transform SpawnPoint;            // só o primeiro spawn do player
     public GameObject MainCameraObject;
     public CameraMov MainCamera;
     public GameObject PlayerObject;
@@ -31,39 +30,30 @@ public class inGameManager : MonoBehaviour
     public TextMeshProUGUI AmmoUI;
     public TextMeshProUGUI SpecialUI;
 
-    [Header("UI de Game Over")]
-    public GameObject[] spawnpoints;
-
     void Awake()
     {
         Instance = this;
 
+        // Sem seleção de classe (ex.: testando direto a cena Game), usa o Soldier.
         if (HeroClassManager.Instance == null)
             SelectedClass = HeroClassManager.HeroClass.Soldier;
         else
             SelectedClass = HeroClassManager.Instance.GetHeroClass();
 
-        if (SelectedClass == HeroClassManager.HeroClass.Soldier)
-        {
-            GameObject spawnedSoldier = Instantiate(
-                PlayerSoldierPrefab, SpawnPoint.position, SpawnPoint.rotation);
+        GameObject prefab =
+            SelectedClass == HeroClassManager.HeroClass.Berserker
+                ? PlayerBerserkPrefab
+                : PlayerSoldierPrefab;
 
-            SoldierShootPool soldierShootPool =
-                spawnedSoldier.GetComponent<SoldierShootPool>();
+        PlayerObject = Instantiate(prefab, SpawnPoint.position, SpawnPoint.rotation);
 
-            if (soldierShootPool != null && MainCameraObject != null)
-                soldierShootPool.aimCamera = MainCameraObject.GetComponent<Camera>();
+        // Entrega a câmera de mira ao player.
+        PlayerCombatInput input = PlayerObject.GetComponent<PlayerCombatInput>();
 
-            PlayerObject = spawnedSoldier;
-        }
-        else if (SelectedClass == HeroClassManager.HeroClass.Berserker)
-        {
-            PlayerObject = Instantiate(
-                PlayerBerserkPrefab, SpawnPoint.position, SpawnPoint.rotation);
-        }
+        if (input != null && MainCameraObject != null)
+            input.aimCamera = MainCameraObject.GetComponent<Camera>();
 
-        if (PlayerObject != null)
-            MainCamera.player = PlayerObject.transform;
+        MainCamera.player = PlayerObject.transform;
     }
 
     public void UpdateLife(int life, int maxLife)
@@ -78,49 +68,9 @@ public class inGameManager : MonoBehaviour
             AmmoUI.text = currentAmmo + "/" + reserveAmmo;
     }
 
-    // Chamado pelo soldado quando morre. A espera acontece aqui, num
-    // objeto que continua ativo.
-    public void RespawnPlayer(float delay, SoldierShootPool soldier)
+    public void UpdateSpecial(string text)
     {
-        StartCoroutine(RespawnRoutine(delay, soldier));
-    }
-
-    IEnumerator RespawnRoutine(float delay, SoldierShootPool soldier)
-    {
-        yield return new WaitForSeconds(delay);
-
-        Debug.Log("Soldier revivido!");
-
-        if (soldier != null)
-            soldier.ResetHealth();
-
-        RevivePlayer();
-    }
-
-    public void RevivePlayer()
-    {
-        if (PlayerObject == null)
-            return;
-
-        // Joga o player para um spawnpoint aleatório.
-        Transform target = SpawnPoint;
-
-        if (spawnpoints != null && spawnpoints.Length > 0)
-        {
-            int randomIndex = Random.Range(0, spawnpoints.Length);
-            target = spawnpoints[randomIndex].transform;
-        }
-
-        PlayerObject.transform.SetPositionAndRotation(
-            target.position, target.rotation);
-
-        // Zera a velocidade para não "herdar" a queda/movimento anterior.
-        if (PlayerObject.TryGetComponent(out Rigidbody playerRb))
-        {
-            playerRb.linearVelocity = Vector3.zero;
-            playerRb.angularVelocity = Vector3.zero;
-        }
-
-        PlayerObject.SetActive(true);
+        if (SpecialUI != null)
+            SpecialUI.text = text;
     }
 }

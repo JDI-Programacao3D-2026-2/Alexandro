@@ -24,6 +24,15 @@ public class PlayerMove : MonoBehaviour
 
     void Awake()
     {
+        //Velocidade diferente por classe
+        if (inGameManager.Instance != null)
+        {
+            if (inGameManager.Instance.SelectedClass == HeroClassManager.HeroClass.Berserker)
+                speed = 4.3f;
+            else
+                speed = 5f;
+        }
+        
         if (rb == null)
             rb = GetComponent<Rigidbody>();
 

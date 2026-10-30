@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 6005175856921571842}
   - component: {fileID: 8314483074860555617}
   m_Layer: 7
-  m_Name: BulletSoldier
+  m_Name: Bellet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -128,9 +128,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da30469c57947f74cb19de81061920d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Projectile
-  speed: 50
-  damage: 10
-  maxDistance: 60
+  soldierDamage: 10
+  soldierSpeed: 80
+  soldierMaxDistance: 45
+  berserkerDamage: 25
+  berserkerSpeed: 30
+  berserkerMaxDistance: 12
   lifeTime: 5
 --- !u!54 &8314483074860555617
 Rigidbody:

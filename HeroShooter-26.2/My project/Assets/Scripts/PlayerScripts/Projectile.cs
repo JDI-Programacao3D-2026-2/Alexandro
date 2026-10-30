@@ -1,19 +1,31 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// A bala agora é movida pela física (Rigidbody), não mais por transform.position.
+// Bala movida pelo Rigidbody. Os dados de dano, velocidade e alcance de cada
+// classe ficam AQUI, neste script (ajuste no Inspector do prefab da bala).
 [RequireComponent(typeof(Rigidbody))]
 public class Projectile : MonoBehaviour
 {
-    [Header("Configuração da bala")]
-    public float speed = 30f;
-    public int damage = 10;
-    public float maxDistance = 100f;
+    [Header("Soldier")]
+    public float soldierDamage = 10f;
+    public float soldierSpeed = 40f;
+    public float soldierMaxDistance = 100f;
+
+    [Header("Berserker (por projétil: mais dano, menos alcance)")]
+    public float berserkerDamage = 6f;
+    public float berserkerSpeed = 35f;
+    public float berserkerMaxDistance = 5f;
+
+    [Header("Geral")]
     public float lifeTime = 5f;
 
     private Rigidbody rb;
     private Collider[] myColliders;
-    private SoldierShootPool shooter;
+    private readonly List<Collider> ignored = new List<Collider>();
 
+    private HeroCombat shooter;
+    private float damage;
+    private float maxDistance;
     private Vector3 startPosition;
     private float spawnTime;
     private bool hasReturned = true;
@@ -23,36 +35,46 @@ public class Projectile : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         myColliders = GetComponentsInChildren<Collider>(true);
 
-        // Configura o Rigidbody por código, para não depender do prefab.
         rb.useGravity = false;
         rb.isKinematic = false;
         rb.freezeRotation = true;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+        // Balas nunca colidem entre si (importante para a shotgun).
+        Physics.IgnoreLayerCollision(gameObject.layer, gameObject.layer, true);
     }
 
-    // Chamado pelo SoldierShootPool depois de posicionar a bala.
-    public void StartProjectile(Vector3 direction, SoldierShootPool shooter)
+    // Chamado pelo HeroCombat depois de posicionar a bala no firePoint.
+    public void StartProjectile(Vector3 direction, HeroCombat shooter)
     {
         this.shooter = shooter;
+
+        bool berserker = shooter.heroClass == HeroClassManager.HeroClass.Berserker;
+        damage = berserker ? berserkerDamage : soldierDamage;
+        maxDistance = berserker ? berserkerMaxDistance : soldierMaxDistance;
+        float speed = berserker ? berserkerSpeed : soldierSpeed;
 
         hasReturned = false;
         startPosition = transform.position;
         spawnTime = Time.time;
 
-        // A bala nunca colide com o próprio atirador (corpo, armas, etc.).
-        if (shooter != null)
+        // A bala ignora o próprio atirador (só colliders ativos; a Unity
+        // reclama de IgnoreCollision com collider desativado).
+        ignored.Clear();
+        foreach (Collider own in shooter.OwnColliders)
         {
-            foreach (Collider own in shooter.OwnColliders)
-            {
-                if (own == null) continue;
+            if (own == null || !own.enabled || !own.gameObject.activeInHierarchy)
+                continue;
 
-                foreach (Collider mine in myColliders)
-                    Physics.IgnoreCollision(mine, own, true);
+            foreach (Collider mine in myColliders)
+            {
+                Physics.IgnoreCollision(mine, own, true);
             }
+
+            ignored.Add(own);
         }
 
-        // Quem move a bala agora é o Rigidbody.
         rb.linearVelocity = direction.normalized * speed;
         rb.angularVelocity = Vector3.zero;
     }
@@ -62,17 +84,11 @@ public class Projectile : MonoBehaviour
         if (hasReturned)
             return;
 
-        // Alcance máximo.
-        float travelled = (rb.position - startPosition).magnitude;
-        if (travelled >= maxDistance)
+        if ((rb.position - startPosition).sqrMagnitude >= maxDistance * maxDistance ||
+            Time.time - spawnTime >= lifeTime)
         {
             ReturnToPool();
-            return;
         }
-
-        // Tempo máximo de vida.
-        if (Time.time - spawnTime >= lifeTime)
-            ReturnToPool();
     }
 
     void OnCollisionEnter(Collision collision)
@@ -80,7 +96,6 @@ public class Projectile : MonoBehaviour
         if (hasReturned)
             return;
 
-        // Aviso de diagnóstico: bala que morre logo depois de sair da arma.
         if (Time.time - spawnTime < 0.1f)
         {
             Debug.LogWarning(
@@ -89,9 +104,10 @@ public class Projectile : MonoBehaviour
                 " (layer " + LayerMask.LayerToName(collision.gameObject.layer) + ")");
         }
 
-        // Aqui entra o dano quando você tiver o script de vida do inimigo:
-        // EnemyHealth enemy = collision.gameObject.GetComponentInParent<EnemyHealth>();
-        // if (enemy != null) enemy.TakeDamage(damage);
+        IDamageable target = collision.collider.GetComponentInParent<IDamageable>();
+
+        if (target != null && !target.IsDead)
+            target.TakeDamage(damage, shooter);
 
         ReturnToPool();
     }
@@ -103,11 +119,23 @@ public class Projectile : MonoBehaviour
 
         hasReturned = true;
 
+        // Desfaz o "ignorar atirador" antes de reaproveitar a bala.
+        foreach (Collider own in ignored)
+        {
+            if (own == null || !own.enabled || !own.gameObject.activeInHierarchy)
+                continue;
+
+            foreach (Collider mine in myColliders)
+                Physics.IgnoreCollision(mine, own, false);
+        }
+
+        ignored.Clear();
+
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-        if (shooter != null)
-            shooter.ReturnProjectile(gameObject);
+        if (ProjectilePool.Instance != null)
+            ProjectilePool.Instance.Release(this);
         else
             gameObject.SetActive(false);
     }
