@@ -651,7 +651,8 @@ GameObject:
   - component: {fileID: 6002430478541694154}
   - component: {fileID: 7393722458164675210}
   - component: {fileID: 4681863769708415296}
-  - component: {fileID: 1378765800242505275}
+  - component: {fileID: 7311941083890516663}
+  - component: {fileID: 7209663155629666167}
   m_Layer: 3
   m_Name: EnemyBerserk
   m_TagString: Player
@@ -800,6 +801,7 @@ MonoBehaviour:
   firePoint: {fileID: 434331224371553880}
   secondWeapon: {fileID: 0}
   secondFirePoint: {fileID: 0}
+  displayName: 
   respawnDelay: 3
   infiniteReserve: 0
   maxHealth: 0
@@ -830,7 +832,7 @@ NavMeshAgent:
   m_BaseOffset: 1.98
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &1378765800242505275
+--- !u!114 &7311941083890516663
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -839,13 +841,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 9080689956429587737}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60d2a0c84981f424ebd5bbf9689f1ab7, type: 3}
+  m_Script: {fileID: 11500000, guid: 51daccb1872309942ad3121cf4e8b839, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyAI
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyNavMesh
+  agent: {fileID: 4681863769708415296}
   moveSpeed: 4
   turnSpeed: 360
-  wanderRadius: 25
-  wanderWait: {x: 0.5, y: 2}
+--- !u!114 &7209663155629666167
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9080689956429587737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a10b8d25a7c5d4479b87acca5b4d5be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BerserkerEnemyController
   sightRange: 40
   viewAngle: 200
   closeAwareness: 6
@@ -855,10 +868,14 @@ MonoBehaviour:
     m_Bits: 4294967295
   scanInterval: 0.25
   loseTargetTime: 3
-  useClassDefaults: 1
-  desiredRange: 12
-  maxShootRange: 30
+  desiredRange: 14
+  maxShootRange: 35
   rangeTolerance: 2
   aimTolerance: 8
   extraSpread: 2
   repathInterval: 0.2
+  wanderRadius: 25
+  wanderWait: {x: 0.5, y: 2}
+  berserkerDesiredRange: 5
+  berserkerMaxShootRange: 11
+  healthToUseSpecial: 0.6

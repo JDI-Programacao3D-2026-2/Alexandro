@@ -649,9 +649,9 @@ GameObject:
   - component: {fileID: 2705728080079378789}
   - component: {fileID: 3982802600736748541}
   - component: {fileID: 6002430478541694154}
-  - component: {fileID: 2720722991888852241}
   - component: {fileID: 7393722458164675210}
-  - component: {fileID: 3818504670410043123}
+  - component: {fileID: 7352183872582530618}
+  - component: {fileID: 2720722991888852241}
   m_Layer: 3
   m_Name: PlayerBerserk
   m_TagString: Player
@@ -784,21 +784,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!114 &2720722991888852241
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9080689956429587737}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ef29783557ebd2408c0e2f20ad82ccc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerMove
-  rb: {fileID: 6002430478541694154}
-  speed: 5
-  jumpForce: 5
 --- !u!114 &7393722458164675210
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -823,7 +808,7 @@ MonoBehaviour:
   currentAmmo: 0
   reserveAmmo: 0
   isPlayer: 0
---- !u!114 &3818504670410043123
+--- !u!114 &7352183872582530618
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -832,13 +817,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 9080689956429587737}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b4ed68af814e7a34295718c275bd4a02, type: 3}
+  m_Script: {fileID: 11500000, guid: e9c222474c64e974195aabbcbc69536b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatInput
+  m_EditorClassIdentifier: Assembly-CSharp::BerserkerPlayerController
   aimCamera: {fileID: 0}
   aimDistance: 200
   aimMask:
     serializedVersion: 2
-    m_Bits: 832
+    m_Bits: 983
   holdToFire: 0
   debugShots: 0
+  moveSpeed: 4.3
+--- !u!114 &2720722991888852241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9080689956429587737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ef29783557ebd2408c0e2f20ad82ccc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMove
+  rb: {fileID: 6002430478541694154}
+  speed: 5
+  jumpForce: 5

@@ -2,7 +2,6 @@ using UnityEngine;
 
 // Toca o som do tiro em 3D na posição de quem atirou.
 // Vai no prefab do player E dos inimigos (junto do HeroCombat).
-[RequireComponent(typeof(HeroCombat))]
 public class ShotAudio : MonoBehaviour
 {
     [Header("Sons")]
@@ -21,6 +20,12 @@ public class ShotAudio : MonoBehaviour
     void Awake()
     {
         combat = GetComponent<HeroCombat>();
+        if (combat == null)
+        {
+            Debug.LogError("ShotAudio precisa estar no mesmo objeto que HeroCombat: " + name);
+            enabled = false;
+            return;
+        }
 
         // O AudioSource é criado e configurado por código.
         source = gameObject.AddComponent<AudioSource>();
@@ -33,12 +38,14 @@ public class ShotAudio : MonoBehaviour
 
     void OnEnable()
     {
-        combat.OnShot += PlayShot;
+        if (combat != null)
+            combat.OnShot += PlayShot;
     }
 
     void OnDisable()
     {
-        combat.OnShot -= PlayShot;
+        if (combat != null)
+            combat.OnShot -= PlayShot;
     }
 
     void PlayShot()

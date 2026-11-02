@@ -1,8 +1,6 @@
 using UnityEngine;
 using UnityEngine.Pool;
 
-// UMA pool compartilhada por todos (player e inimigos).
-// Coloque este script em um objeto vazio da cena Game.
 public class ProjectilePool : MonoBehaviour
 {
     public static ProjectilePool Instance;

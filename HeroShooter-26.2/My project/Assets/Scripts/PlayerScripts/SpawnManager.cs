@@ -19,6 +19,10 @@ public class SpawnManager : MonoBehaviour
     public GameObject[] enemyPrefabs;
     public int enemyCount = 5;
 
+    [Header("Munição dropada ao morrer")]
+    public AmmoPickup ammoPickupPrefab;
+    public float pickupHeight = 0.3f; // altura do item em relação ao chão
+
     private int lastUsedIndex = -1;
 
     void Awake()
@@ -93,6 +97,26 @@ public class SpawnManager : MonoBehaviour
 
         lastUsedIndex = best;
         return spawnPoints[best];
+    }
+
+    // Cria o item de munição no chão, no lugar onde alguém morreu.
+    // Quem chama: HeroCombat.Die().
+    public void DropAmmo(Vector3 position, int ammo, HeroClassManager.HeroClass dropperClass)
+    {
+        if (ammoPickupPrefab == null || ammo <= 0)
+            return;
+
+        // Desce até o chão para o item não ficar flutuando.
+        Vector3 spawnPosition = position;
+
+        if (Physics.Raycast(position + Vector3.up * 0.5f, Vector3.down,
+            out RaycastHit hit, 5f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            spawnPosition = hit.point + Vector3.up * pickupHeight;
+        }
+
+        AmmoPickup pickup = Instantiate(ammoPickupPrefab, spawnPosition, Quaternion.identity);
+        pickup.Setup(ammo, dropperClass);
     }
 
     public void RequestRespawn(HeroCombat combatant, float delay)

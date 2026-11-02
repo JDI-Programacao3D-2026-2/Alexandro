@@ -1054,7 +1054,8 @@ GameObject:
   - component: {fileID: 6002430478541694154}
   - component: {fileID: 352145624670282631}
   - component: {fileID: 6807143645849003804}
-  - component: {fileID: 5955438942440271271}
+  - component: {fileID: 285556100712521209}
+  - component: {fileID: 70354951073934356}
   m_Layer: 3
   m_Name: EnemySoldier
   m_TagString: Player
@@ -1233,7 +1234,7 @@ NavMeshAgent:
   m_BaseOffset: 1.98
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &5955438942440271271
+--- !u!114 &285556100712521209
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1242,13 +1243,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 9080689956429587737}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60d2a0c84981f424ebd5bbf9689f1ab7, type: 3}
+  m_Script: {fileID: 11500000, guid: 51daccb1872309942ad3121cf4e8b839, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyAI
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyNavMesh
+  agent: {fileID: 6807143645849003804}
   moveSpeed: 4
   turnSpeed: 360
-  wanderRadius: 25
-  wanderWait: {x: 0.5, y: 2}
+--- !u!114 &70354951073934356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9080689956429587737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e773f722fdbbbac48b52f0bfeb3698e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoldierEnemyController
   sightRange: 40
   viewAngle: 200
   closeAwareness: 6
@@ -1258,10 +1270,13 @@ MonoBehaviour:
     m_Bits: 4294967295
   scanInterval: 0.25
   loseTargetTime: 3
-  useClassDefaults: 1
-  desiredRange: 12
-  maxShootRange: 30
+  desiredRange: 14
+  maxShootRange: 35
   rangeTolerance: 2
   aimTolerance: 8
   extraSpread: 2
   repathInterval: 0.2
+  wanderRadius: 25
+  wanderWait: {x: 0.5, y: 2}
+  soldierDesiredRange: 14
+  soldierMaxShootRange: 35

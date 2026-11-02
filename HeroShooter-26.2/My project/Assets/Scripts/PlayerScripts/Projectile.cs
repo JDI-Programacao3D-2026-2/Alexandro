@@ -3,7 +3,6 @@ using UnityEngine;
 
 // Bala movida pelo Rigidbody. Os dados de dano, velocidade e alcance de cada
 // classe ficam AQUI, neste script (ajuste no Inspector do prefab da bala).
-[RequireComponent(typeof(Rigidbody))]
 public class Projectile : MonoBehaviour
 {
     [Header("Soldier")]
@@ -34,6 +33,13 @@ public class Projectile : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         myColliders = GetComponentsInChildren<Collider>(true);
+
+        if (rb == null)
+        {
+            Debug.LogError("O prefab do projétil precisa ter Rigidbody: " + name);
+            enabled = false;
+            return;
+        }
 
         rb.useGravity = false;
         rb.isKinematic = false;

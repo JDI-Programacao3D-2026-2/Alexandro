@@ -1052,10 +1052,9 @@ GameObject:
   - component: {fileID: 2705728080079378789}
   - component: {fileID: 3982802600736748541}
   - component: {fileID: 6002430478541694154}
-  - component: {fileID: 2720722991888852241}
   - component: {fileID: 352145624670282631}
-  - component: {fileID: 5710009405948537185}
-  - component: {fileID: -6531390617353487812}
+  - component: {fileID: 7663516119650346855}
+  - component: {fileID: 2720722991888852241}
   m_Layer: 3
   m_Name: PlayerSoldier
   m_TagString: Player
@@ -1188,21 +1187,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!114 &2720722991888852241
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9080689956429587737}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ef29783557ebd2408c0e2f20ad82ccc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerMove
-  rb: {fileID: 6002430478541694154}
-  speed: 5
-  jumpForce: 5
 --- !u!114 &352145624670282631
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1227,7 +1211,7 @@ MonoBehaviour:
   currentAmmo: 0
   reserveAmmo: 0
   isPlayer: 0
---- !u!114 &5710009405948537185
+--- !u!114 &7663516119650346855
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1236,17 +1220,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 9080689956429587737}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b4ed68af814e7a34295718c275bd4a02, type: 3}
+  m_Script: {fileID: 11500000, guid: e188ec5ef454e0c40bbf48a074668c8a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatInput
+  m_EditorClassIdentifier: Assembly-CSharp::SoldierPlayerController
   aimCamera: {fileID: 0}
   aimDistance: 200
   aimMask:
     serializedVersion: 2
-    m_Bits: 832
-  holdToFire: 0
+    m_Bits: 983
+  holdToFire: 1
   debugShots: 0
---- !u!114 &-6531390617353487812
+  moveSpeed: 5
+--- !u!114 &2720722991888852241
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1255,12 +1240,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 9080689956429587737}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ab081ecc94dd26048813c4b3fa6bd4be, type: 3}
+  m_Script: {fileID: 11500000, guid: 1ef29783557ebd2408c0e2f20ad82ccc, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShotAudio
-  shotClips: []
-  volume: 0.8
-  pitchRange: {x: 0.95, y: 1.05}
-  spatialBlend: 1
-  minDistance: 3
-  maxDistance: 60
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMove
+  rb: {fileID: 6002430478541694154}
+  speed: 5
+  jumpForce: 5

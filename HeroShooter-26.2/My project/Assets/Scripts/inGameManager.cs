@@ -40,6 +40,10 @@ public class inGameManager : MonoBehaviour
         else
             SelectedClass = HeroClassManager.Instance.GetHeroClass();
 
+        // Se nenhuma classe foi selecionada, usa Soldier como padrão.
+        if (SelectedClass == HeroClassManager.HeroClass.None)
+            SelectedClass = HeroClassManager.HeroClass.Soldier;
+
         GameObject prefab =
             SelectedClass == HeroClassManager.HeroClass.Berserker
                 ? PlayerBerserkPrefab
@@ -48,12 +52,16 @@ public class inGameManager : MonoBehaviour
         PlayerObject = Instantiate(prefab, SpawnPoint.position, SpawnPoint.rotation);
 
         // Entrega a câmera de mira ao player.
-        PlayerCombatInput input = PlayerObject.GetComponent<PlayerCombatInput>();
+        // Os dois controladores de jogador herdam de PlayerControllerBase.
+        PlayerControllerBase input = PlayerObject.GetComponent<PlayerControllerBase>();
 
         if (input != null && MainCameraObject != null)
             input.aimCamera = MainCameraObject.GetComponent<Camera>();
 
-        MainCamera.player = PlayerObject.transform;
+        if (MainCamera != null)
+            MainCamera.player = PlayerObject.transform;
+        else
+            Debug.LogWarning("Configure a referência MainCamera no inGameManager.");
     }
 
     public void UpdateLife(int life, int maxLife)
@@ -72,5 +80,37 @@ public class inGameManager : MonoBehaviour
     {
         if (SpecialUI != null)
             SpecialUI.text = text;
+    }
+
+    // Mostra a pontuação do jogador. Quem chama: FragManager, quando a pontuação muda.
+    public void UpdateScore(int score)
+    {
+        Score = score;
+
+        if (ScoreUI != null)
+            ScoreUI.text = score.ToString();
+    }
+
+    // Mostra a MAIOR pontuação da sala (de qualquer jogador). Quem chama: FragManager.
+    public void UpdateHighScore(int highScore)
+    {
+        HighScore = highScore;
+
+        if (HighScoreUI != null)
+            HighScoreUI.text = highScore.ToString();
+    }
+
+    // Mostra o combo só enquanto ele existir (0 = esconde). Quem chama: FragManager.
+    public void UpdateCombo(int combo)
+    {
+        ComboCount = combo;
+
+        if (ComboUI == null)
+            return;
+
+        ComboUI.gameObject.SetActive(combo > 0);
+
+        if (combo > 0)
+            ComboUI.text = "COMBO x" + combo;
     }
 }

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-// Vida, munição, tiro e especial. Serve para o PLAYER e para os INIMIGOS:
-// quem decide quando atirar é o PlayerCombatInput ou o EnemyAI.
+// Componente compartilhado: controla vida, munição, tiro e especial.
+// Os controladores de Soldier/Berserker decidem quando chamar essas ações.
 public class HeroCombat : MonoBehaviour, IDamageable
 {
     // Todos os combatentes ativos (player + inimigos). Usado pela IA e pelo spawn.
@@ -75,11 +75,14 @@ public class HeroCombat : MonoBehaviour, IDamageable
     public GameObject secondWeapon;     // só Soldier (especial)
     public Transform secondFirePoint;   // só Soldier (especial)
 
+    [Header("Identificação")]
+    public string displayName; // aparece no painel de frags; vazio = o FragManager escolhe
+
     [Header("Respawn")]
     public float respawnDelay = 3f;
 
     [Header("Munição")]
-    public bool infiniteReserve = false; // o EnemyAI liga isto
+    public bool infiniteReserve = false; // EnemyControllerBase liga isto nos inimigos
 
     [Header("Estado (somente leitura)")]
     public int maxHealth;
@@ -87,7 +90,7 @@ public class HeroCombat : MonoBehaviour, IDamageable
     public int magazineSize;
     public int currentAmmo;
     public int reserveAmmo;
-    public bool isPlayer; // o PlayerCombatInput liga isto
+    public bool isPlayer; // PlayerControllerBase liga isto no jogador
 
     public bool IsDead { get; private set; }
     public bool IsReloading => reloading;
@@ -139,6 +142,10 @@ public class HeroCombat : MonoBehaviour, IDamageable
     {
         UpdateAmmoUI();
         UpdateLifeUI();
+
+        // Entra na tabela de pontuação (o FragManager escuta o OnDied deste personagem).
+        if (FragManager.Instance != null)
+            FragManager.Instance.Register(this);
     }
 
     void OnEnable()
@@ -164,6 +171,17 @@ public class HeroCombat : MonoBehaviour, IDamageable
             specialCooldownTimer = Mathf.Max(0f, specialCooldownTimer - Time.deltaTime);
 
         UpdateSpecialUI();
+    }
+
+    // Define a classe deste personagem e aplica os atributos correspondentes.
+    // Os controladores específicos chamam este método ao iniciar.
+    public void ConfigureClass(HeroClassManager.HeroClass selectedClass)
+    {
+        heroClass = selectedClass;
+        stats = GetStats(heroClass);
+        ApplyStatsFull();
+        UpdateAmmoUI();
+        UpdateLifeUI();
     }
 
     void ApplyStatsFull()
@@ -333,6 +351,13 @@ public class HeroCombat : MonoBehaviour, IDamageable
         UpdateLifeUI();
     }
 
+    // Soma munição à reserva. Quem chama: o AmmoPickup quando alguém coleta o item.
+    public void AddReserveAmmo(int amount)
+    {
+        reserveAmmo += amount;
+        UpdateAmmoUI();
+    }
+
     public void TakeDamage(float amount, HeroCombat attacker)
     {
         if (IsDead) return;
@@ -358,6 +383,10 @@ public class HeroCombat : MonoBehaviour, IDamageable
         Debug.Log(name + " morreu.");
 
         gameObject.SetActive(false);
+
+        // Deixa cair a munição de reserva que tinha (a posição continua a mesma).
+        if (SpawnManager.Instance != null)
+            SpawnManager.Instance.DropAmmo(transform.position, reserveAmmo, heroClass);
 
         // A espera do respawn acontece no SpawnManager (que continua ativo).
         if (SpawnManager.Instance != null)
