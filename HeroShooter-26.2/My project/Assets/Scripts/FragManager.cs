@@ -89,7 +89,7 @@ public class FragManager : MonoBehaviour
 
         // Nome: o do Inspector; senão "Jogador" ou "Inimigo N".
         if (string.IsNullOrEmpty(combat.displayName))
-            combat.displayName = combat.isPlayer ? "Jogador" : "Inimigo " + (++enemyCounter);
+            combat.displayName = combat.isPlayer ? "Player" : "Inimigo " + (++enemyCounter);
 
         Entry entry = new Entry { combat = combat, name = combat.displayName };
         entries.Add(entry);
@@ -184,6 +184,26 @@ public class FragManager : MonoBehaviour
             inGameManager.Instance.UpdateScore(human.score);
             inGameManager.Instance.UpdateCombo(human.combo);
         }
+    }
+
+    // Devolve quem tem a maior pontuação (desempate: mais finalizações, depois menos mortes).
+    // Quem chama: inGameManager.EndMatch(), para o painel de fim de partida.
+    public void GetTopScorer(out string playerName, out int score)
+    {
+        Entry best = null;
+
+        foreach (Entry e in entries)
+        {
+            if (best == null || e.score > best.score ||
+                (e.score == best.score && (e.kills > best.kills ||
+                (e.kills == best.kills && e.deaths < best.deaths))))
+            {
+                best = e;
+            }
+        }
+
+        playerName = best != null ? best.name : "-";
+        score = best != null ? best.score : 0;
     }
 
     // ======================= PAINEL (TAB) =======================

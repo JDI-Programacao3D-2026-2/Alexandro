@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class inGameManager : MonoBehaviour
 {
@@ -30,9 +31,24 @@ public class inGameManager : MonoBehaviour
     public TextMeshProUGUI AmmoUI;
     public TextMeshProUGUI SpecialUI;
 
+    [Header("Fim de partida")]
+    public GameObject endPanel;               // painel com o resultado (começa desligado)
+    public TextMeshProUGUI winnerText;        // "Vencedor da captura: ..."
+    public TextMeshProUGUI topScorerText;     // "Maior pontuador: ..."
+    public string menuSceneName = "Menu";     // cena do botão "Voltar ao menu"
+
+    public bool IsMatchOver { get; private set; }
+
     void Awake()
     {
         Instance = this;
+
+        // Garante o jogo rodando (a partida anterior pode ter deixado o tempo parado).
+        Time.timeScale = 1f;
+        IsMatchOver = false;
+
+        if (endPanel != null)
+            endPanel.SetActive(false);
 
         // Sem seleção de classe (ex.: testando direto a cena Game), usa o Soldier.
         if (HeroClassManager.Instance == null)
@@ -112,5 +128,63 @@ public class inGameManager : MonoBehaviour
 
         if (combo > 0)
             ComboUI.text = "COMBO x" + combo;
+    }
+
+    // Encerra a partida: mostra o resultado, congela o jogo e solta o mouse.
+    // Quem chama: ZoneManager, quando alguém completa o tempo de captura.
+    public void EndMatch(string winnerName)
+    {
+        if (IsMatchOver)
+            return;
+
+        IsMatchOver = true;
+
+        string topName = "-";
+        int topScore = 0;
+
+        if (FragManager.Instance != null)
+            FragManager.Instance.GetTopScorer(out topName, out topScore);
+
+        if (winnerText != null)
+            winnerText.text = "Vencedor da captura: " + winnerName;
+
+        if (topScorerText != null)
+            topScorerText.text = "MVP: " + topName + " (" + topScore + " pts)";
+
+        // Desliga os controles do player e da IA, para cliques nos botões não atirarem.
+        foreach (HeroCombat c in HeroCombat.All)
+        {
+            foreach (MonoBehaviour b in c.GetComponents<MonoBehaviour>())
+            {
+                if (b is PlayerControllerBase || b is PlayerMove || b is EnemyControllerBase)
+                    b.enabled = false;
+            }
+        }
+
+        // Desligar a CameraMov impede que ela prenda o mouse de novo ao clicar nos botões.
+        if (MainCamera != null)
+            MainCamera.enabled = false;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        Time.timeScale = 0f;
+
+        if (endPanel != null)
+            endPanel.SetActive(true);
+    }
+
+    // Botão "Reiniciar partida": recarrega a cena atual. Ligar no OnClick do botão.
+    public void RestartMatch()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    // Botão "Voltar ao menu": carrega a cena do menu. Ligar no OnClick do botão.
+    public void BackToMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(menuSceneName);
     }
 }

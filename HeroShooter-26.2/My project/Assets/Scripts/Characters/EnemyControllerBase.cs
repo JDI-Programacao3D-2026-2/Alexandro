@@ -36,6 +36,7 @@ public abstract class EnemyControllerBase : MonoBehaviour
     private float repathTimer;
     private float waitTimer;
     private bool hasWanderDestination;
+    private bool hasZoneDestination;
     private readonly RaycastHit[] sightHits = new RaycastHit[16];
 
     // Cada classe informa qual classe de atributos deve usar e configura suas distâncias.
@@ -63,6 +64,7 @@ public abstract class EnemyControllerBase : MonoBehaviour
         target = null;
         targetVisible = false;
         hasWanderDestination = false;
+        hasZoneDestination = false;
         waitTimer = 0f;
     }
 
@@ -116,9 +118,17 @@ public abstract class EnemyControllerBase : MonoBehaviour
 
         if (target == null)
         {
-            Wander();
+            // Sem alvo: vai para a zona de captura (se existir) ou perambula.
+            if (ZoneManager.Instance != null)
+                GoToCaptureZone();
+            else
+                Wander();
+
             return;
         }
+
+        // Com alvo ele luta; depois precisará escolher o destino da zona de novo.
+        hasZoneDestination = false;
 
         if (targetVisible)
             EngageTarget();
@@ -294,6 +304,33 @@ public abstract class EnemyControllerBase : MonoBehaviour
         {
             repathTimer = repathInterval;
             navigation.MoveTo(lastSeenPosition);
+        }
+    }
+
+    // Vai até a zona de captura e fica parado dentro dela, capturando.
+    // Quem chama: Update, quando o inimigo não tem alvo e existe um ZoneManager.
+    void GoToCaptureZone()
+    {
+        navigation.FaceVelocity();
+
+        // Já está dentro: para e deixa o tempo de captura correr.
+        if (ZoneManager.Instance.IsInside(transform.position))
+        {
+            navigation.Stop();
+            hasZoneDestination = false;
+            return;
+        }
+
+        // Cada inimigo sorteia um ponto da zona, para não ficarem todos empilhados.
+        if (!hasZoneDestination || navigation.ReachedDestination())
+        {
+            Vector3 point = ZoneManager.Instance.GetRandomPointInZone();
+
+            if (navigation.TryGetNavMeshPoint(point, 6f, out Vector3 validPoint))
+            {
+                navigation.MoveTo(validPoint);
+                hasZoneDestination = true;
+            }
         }
     }
 
